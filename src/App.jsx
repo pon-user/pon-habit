@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-// v7.1 / 2026-10-14: portaled modal above navigation, 36px visible / 44px touch checkboxes; mascot icon assets provided separately.
+// v7.2 / 2026-10-14: robust iPhone viewport and modal positions; compact 28px checkboxes with 44px tap targets; active habits first; extended partner dialogue.
 
 
 // ─── v6 XP・日付・保存の共通ロジック ──────────────────────────
@@ -82,52 +82,214 @@ const STORAGE_KEYS={habits:"pon_habits",logs:"pon_logs",status:"pon_status",sett
 function load(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}}
 function save(key,value){try{localStorage.setItem(key,JSON.stringify(value));}catch{/* 個人用。公開時に失敗表示追加 */}}
 
-// ─── パートナーコメント ────────────────────────────────────────────
-// name: パートナー名（デフォルト「ぽん」）
+// ─── パートナーコメント（136種＋時間帯32種）────────────────
 function buildComments(name) {
-return {
-idle: [
-"今日の分、ひとつずついこう",
-"気が向いたら、ここから始めよう",
-`${name}はここで待ってるよ`,
-"小さくでいい。一歩だけでも",
-],
-partial: [
-"いいね、ちゃんと積んでるよ",
-`続けてきたの、${name}は見てる`,
-"あとちょっと。焦らなくていい",
-"その調子でいこう",
-],
-allDone: [
-"全部できた。今日は本当にえらい",
-"パーフェクト。気持ちよかったでしょ",
-`やりきった。${name}も嬉しいよ`,
-"全クリ。積み上がってるの見えてるよ",
-],
-levelUp: [
-"レベルアップ！少しずつ本物になってきてるね",
-"ぐっと伸びた。この感じ、続けていこう",
-`成長してる。${name}も一緒に進んでるよ`,
-],
-streak: [
-"続いてるね。それだけで十分すごい",
-"また来てくれた。うれしいよ",
-"連続記録、更新中だよ",
-],
-empty: [
-"まずは1つ、習慣を追加してみよう",
-"ここから始めよう。小さくていい",
-],
-noTask: [
-"今日は休みの日。ゆっくりしよう",
-"今日の予定はなし。ゆったりね",
-],
-};
+  return {
+    idle: [
+    "今日の分、ひとつずついこう",
+    "始める前がいちばん気が重いんだよね",
+    "最初のひとつが、今日を変えるよ",
+    "大きなことはしなくていい。まずひとつ",
+    "今できることから始めてみよう",
+    "気負わずに、いつもの一歩から",
+    "完璧じゃなくていい。動けたら十分",
+    "始めるまでの数分が山場かもね",
+    "今日の自分にできる分を探そう",
+    "よし、最初のチェックをつけにいこう",
+    "準備ができたら、ひとつだけ",
+    "小さい行動も、立派な行動だよ",
+    "考えるより先に、少し動いてみよう",
+    "昨日と同じでも、今日の一歩には意味がある",
+    "全部を考えず、まず目の前のひとつ",
+    "始めてしまえば意外と進むかもしれない",
+    "気が乗らない日ほど、入口を小さく",
+    "今日も一日分、積み重ねていこう",
+    "急がなくていい、止まらずにいこう",
+    "迷ったら、いつもの習慣から",
+    "やる気を待たなくても始められるよ",
+    "どの習慣からやってみようか",
+    "一歩目に必要なのは、少しの時間だけ",
+    "記録は後からついてくる。まず行動",
+    "今の自分にちょうどいいペースで"
+    ],
+    partial: [
+    "ひとつ進んだね。次はどうする？",
+    "もう動き出してる。いい流れだよ",
+    "ここまでできた分を大切にしよう",
+    "あと少し。自分のペースでね",
+    "今日の積み上げが見えてきた",
+    "最初の一歩を越えたね",
+    "全部できなくても、できた分は残る",
+    "一度始めた流れ、うまく使おう",
+    "もう一つできたら、今日はさらに前進",
+    "ここから先は無理なく選ぼう",
+    "今日できたことを数えてみよう",
+    "行動した事実はちゃんと残ってる",
+    "残りは焦らず、ひとつずつ",
+    "途中まででもゼロじゃないよ",
+    "頑張りすぎないで、次の一件へ",
+    "いいリズム。できるところまでいこう",
+    "順番は自由。進めやすいものから",
+    "最初のひとつをやった自分、忘れないで",
+    "積み上げ途中の景色もいいね",
+    "少しずつ形になってきたよ",
+    "残りの習慣に手を伸ばしてみよう",
+    "一件ずつでいい。続きはここから",
+    "昨日より、今できることを見よう",
+    "ここからもう一歩、いけそうかな",
+    "無理はせず、続けられる歩幅で"
+    ],
+    allDone: [
+    "全部完了。今日はやり切ったね",
+    "全クリ！今日の積み重ね、受け取ったよ",
+    "今日のリストにチェックが並んだね",
+    "やると決めたことを、全部できた",
+    "今日はここまで。しっかり休もう",
+    "全部終わった。いい締めくくりだね",
+    "おつかれさま。今日の分は完了",
+    "今日の自分との約束、守れたね",
+    "全クリ達成。着実に進んでるよ",
+    "ひとつずつ進めた結果が、この画面だね",
+    "今日の頑張り、ちゃんと残ってる",
+    "よく続けたね。今日は胸を張ろう",
+    "小さなチェックが、全部そろったよ",
+    "ひとつずつの積み重ねが効いたね",
+    "今日のミッション、クリア！",
+    "終わったら休んでいい。そこも大事",
+    "全クリの瞬間は、やっぱりうれしいね",
+    "今日もやりきった。次は明日でいいよ",
+    "習慣に使った時間、自分への投資だね",
+    "きれいにチェックがそろったよ",
+    "手をつけたところから、ここまで来たね",
+    "今日の行動は、明日の自分に届く",
+    "よくやった。今日はもう追加の宿題なし",
+    "記録が少しずつ自信になっていくね",
+    "またひとつ、続けた日が増えたよ",
+    "全クリ！自分で決めた分を終えられたね"
+    ],
+    levelUp: [
+    "レベルアップ！積み上げが数字になったね",
+    "やったね、新しいレベルへ",
+    "今日の一歩も成長につながったよ",
+    "続けてきた記録が、レベルになったね",
+    "一段上へ。ここからもいつもどおり",
+    "成長してる。次は何を続けようか",
+    "レベルが上がった！積み重ねの結果だよ",
+    "一つ上の景色だね。おめでとう",
+    "今日までの小さな行動に拍手",
+    "おめでとう。ここからも無理なく",
+    "成長の形が見えたね。いい感じ",
+    "特別なことより、いつもの積み重ね",
+    "次のレベルも、毎日の一歩から",
+    "努力を数字で見られる日だね",
+    "続けた時間は、ちゃんと力になってる"
+    ],
+    streak: [
+    "続けるって簡単じゃない。それでも進んでるね",
+    "連続記録が続いてるよ",
+    "昨日の一歩が今日につながってる",
+    "続いてきた流れ、大切にしよう",
+    "ここまで積み上げた日々があるね",
+    "日々の小さな行動が道になってる",
+    "習慣が少しずつ身近になってきたね",
+    "連続記録、少しずつ伸ばそう",
+    "今日は昨日の続きになる日だね",
+    "自分で作ったリズムを育てよう",
+    "いつもの行動を今日もひとつ",
+    "焦らず続けるのがいちばん強いね",
+    "積み上げた日付が増えてきたね",
+    "一歩ずつ、記録をつないでいこう",
+    "今日も続けられたらうれしいね"
+    ],
+    empty: [
+    "まずは一つ、続けたいことを決めよう",
+    "最初から五つ作らなくていいよ",
+    "小さな習慣を一つだけ登録してみよう",
+    "始めやすいことが、続きやすいこと",
+    "ここから好きなペースで始めよう",
+    "まずは一つ。そこから育てていこう",
+    "続けたいことを思い浮かべてみよう",
+    "最初は簡単な約束からでいい",
+    "自分の生活に合う習慣を選ぼう",
+    "毎日じゃなくても、始める意味はある",
+    "最初の一歩をここに置いてみよう",
+    "続けられそうなこと、一緒に探そう",
+    "今の自分に必要な習慣は何だろう",
+    "ひとつ決めたら、それでスタート",
+    "数より、続けたい気持ちを大事に"
+    ],
+    noTask: [
+    "今日は予定なし。余白も大事だね",
+    "今日の習慣はお休み。のんびりしよう",
+    "予定がない日も、記録の一部だよ",
+    "次の実施日まで、ゆっくり過ごしてね",
+    "無理に習慣を増やさなくていいよ",
+    "休む日を作るのも、続ける工夫",
+    "今日は自由な時間を楽しもう",
+    "今日はチェックをつけなくて大丈夫",
+    "計画した休みなら、遠慮はいらない",
+    "今日の分は空白でいい。次に備えよう",
+    "次の習慣の日に、またここで",
+    "習慣は毎日じゃなくても育っていく",
+    "休みの日にまで頑張らなくていい",
+    "今日は気楽に。次は予定日にね",
+    "今日はオフ。何をして過ごそうか"
+    ]
+  };
 }
-function getPonComment(state, partnerName = "ぽん") {
-const comments = buildComments(partnerName);
-const pool = comments[state] || comments.idle;
-return pool[Math.floor(Math.random() * pool.length)];
+const TIME_COMMENTS = {
+  morning: [
+    "朝の一歩は、小さくても頼もしい",
+    "おはよう。今日は何から始めよう",
+    "朝はまず、できることをひとつ",
+    "新しい一日のリズムを作ろう",
+    "朝に決めた一歩を大事にね",
+    "午前中の自分に、少しだけ時間を",
+    "起きてからの流れを味方にしよう",
+    "今日の始まり、ゆっくりでいいよ"
+  ],
+  day: [
+    "昼のすき間に、ひとつ進める？",
+    "今日の残り時間をどう使おうか",
+    "ちょっとした休憩のあとに一歩",
+    "忙しい日も、自分のペースで",
+    "午後の自分にできることをひとつ",
+    "今やれるところから、軽く進もう",
+    "今日の予定をちらっと見直そう",
+    "時間ができたら、ここから再開"
+  ],
+  evening: [
+    "一日の終わりに、小さな一歩",
+    "おつかれさま。今日の分を確認しよう",
+    "夜は無理なく、できる範囲で",
+    "夕方のひと息を入れてからでもいい",
+    "今日の自分のペースを尊重しよう",
+    "ここから一件、進められるかな",
+    "終わる前に、やっておきたいことは？",
+    "帰ってきてからの習慣も大切だね"
+  ],
+  night: [
+    "遅い時間だね。無理はしないで",
+    "今日はあと少し。睡眠も大事だよ",
+    "夜更かししてまで頑張らなくていい",
+    "今夜できることだけ、ひとつ",
+    "一日の締めくくりは落ち着いて",
+    "今日は十分頑張ったなら、休んでね",
+    "眠る前の短い時間を大切に",
+    "明日の自分にも余裕を残そう"
+  ]
+};
+function getPonComment(state, partnerName = "ぽん", previous = "") {
+  const normal = buildComments(partnerName)[state] || buildComments(partnerName).idle;
+  const hour = new Date().getHours();
+  const part = hour >= 5 && hour < 11 ? "morning"
+    : hour < 17 && hour >= 11 ? "day"
+    : hour < 22 && hour >= 17 ? "evening" : "night";
+  // 時間帯コメントはまだ着手前のときにのみ表示。全クリ時に励ましを混ぜない。
+  const pool = state === "idle" ? [...normal, ...TIME_COMMENTS[part]] : normal;
+  const alternatives = pool.filter(comment => comment !== previous);
+  const candidates = alternatives.length ? alternatives : pool;
+  return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
 // ─── アイコン（SVG）───────────────────────────────────────────────
@@ -239,7 +401,7 @@ const T = theme || C;
 return <style>{`
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body, #root { height: 100%; width: 100%; background: ${T.bg}; }
+html, body, #root { height: 100%; width: 100%; max-width: 100%; background: ${T.bg}; overflow-x: hidden; }
 #root { height: 100dvh; min-height: 100dvh; overflow: hidden; }
 html, body { overscroll-behavior: none; }
 body { overflow: hidden; }
@@ -346,6 +508,8 @@ input:focus, select:focus { border-color: ${T.accent}66; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid ${T.accent}; outline-offset: 2px; }
 .pon-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .pon-bottom-sheet input, .pon-bottom-sheet select { scroll-margin-bottom: 20px; }
+.pon-root { overflow-x: clip; overscroll-behavior-x: none; }
+.pon-modal-backdrop { overscroll-behavior: contain; }
 select option { background: ${T.selectBg || T.card}; }
 
 `}</style>;
@@ -787,7 +951,7 @@ return (
 display: "flex",
 alignItems: "center",
 gap: 14,
-padding: "14px 20px",
+padding: "10px 20px",
 borderBottom: `1px solid ${C.border}`,
 background: done ? C.accentDim.replace("0.1)", "0.05)").replace("0.12)", "0.04)") : "transparent",
 transition: "background 0.3s ease",
@@ -810,7 +974,7 @@ flexShrink: 0,
 }}
 >
 <span aria-hidden="true" style={{
-width: 36, height: 36, borderRadius: 8,
+width: 28, height: 28, borderRadius: 7,
 border: `2px solid ${done ? C.accent : C.checkboxBorder}`,
 background: done ? C.accentDim : "transparent",
 display: "flex", alignItems: "center", justifyContent: "center",
@@ -876,16 +1040,22 @@ const prevLevelUpInfo = useRef(null);
 useEffect(() => {
 // levelUpInfoが新しく来たときだけぽんコメントを変更
 if (levelUpInfo && levelUpInfo !== prevLevelUpInfo.current) {
-setPonComment(getPonComment("levelUp", partnerName));
+setPonComment(old => {
+  const next = getPonComment("levelUp", partnerName, old);
+  return next;
+});
 prevLevelUpInfo.current = levelUpInfo;
 }
 }, [levelUpInfo]);
 
 useEffect(() => {
 if (!levelUpInfo) {
-setPonComment(getPonComment(state, partnerName));
+setPonComment(old => {
+  const next = getPonComment(state, partnerName, old);
+  return next;
+});
 }
-}, [state, partnerName]);
+}, [state, partnerName, doneCount, todayStr]);
 
 // ボーナス達成を検知してトーストを出す
 useEffect(() => {
@@ -1079,7 +1249,10 @@ function getModalViewport() {
   const v = window.visualViewport;
   return {
     top: Math.max(0, v ? v.offsetTop : 0),
-    height: Math.max(120, Math.round(v ? v.height : window.innerHeight))
+    left: Math.max(0, v ? v.offsetLeft : 0),
+    width: Math.max(240, Math.round(v ? v.width : window.innerWidth)),
+    height: Math.max(120, Math.round(v ? v.height : window.innerHeight)),
+    scale: v?.scale || 1
   };
 }
 function Modal({ onClose, children, title }) {
@@ -1108,11 +1281,19 @@ function Modal({ onClose, children, title }) {
   const handleFocus = event => {
     if (!event.target.closest("input, select, textarea")) return;
     const target = event.target;
+    // scrollIntoView scrolls *every ancestor*, including Safari's page.
+    // Scroll only inside the sheet so the whole app cannot slide horizontally.
     window.setTimeout(() => {
-      if (scrollRef.current?.contains(target)) {
-        target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      const sheet = scrollRef.current;
+      if (!sheet?.contains(target)) return;
+      const targetRect = target.getBoundingClientRect();
+      const sheetRect = sheet.getBoundingClientRect();
+      if (targetRect.bottom > sheetRect.bottom - 20) {
+        sheet.scrollTop += targetRect.bottom - sheetRect.bottom + 20;
+      } else if (targetRect.top < sheetRect.top + 72) {
+        sheet.scrollTop -= sheetRect.top + 72 - targetRect.top;
       }
-    }, 300);
+    }, 350);
   };
 
   // A portal is essential here: an overlay inside the app's overflow:hidden
@@ -1120,8 +1301,8 @@ function Modal({ onClose, children, title }) {
   return createPortal(
     <div className="pon-modal-backdrop" onClick={onClose} style={{
       position: "fixed",
-      left: 0, right: 0, top: viewport.top, height: viewport.height,
-      width: "100%", zIndex: 10000,
+      left: viewport.left, top: viewport.top, height: viewport.height,
+      width: viewport.width, maxWidth: "100%", zIndex: 10000,
       background: "rgba(0,0,0,0.65)",
       display: "flex", justifyContent: "center", alignItems: "flex-end",
       overflow: "hidden", animation: "overlayIn 0.2s ease",
@@ -1190,7 +1371,7 @@ background: `linear-gradient(90deg, ${C.accent}30, transparent)`,
 display: "flex",
 alignItems: "center",
 gap: 14,
-padding: "13px 20px",
+padding: "10px 20px",
 borderBottom: `1px solid ${C.border}`,
 background: done ? C.accentDim.replace("0.1)", "0.04)").replace("0.12)", "0.04)") : "transparent",
 transition: "background 0.3s ease",
@@ -1206,7 +1387,7 @@ flexShrink: 0,
 }}
 >
 <span aria-hidden="true" style={{
-width: 36, height: 36, borderRadius: 8,
+width: 28, height: 28, borderRadius: 7,
 border: `2px solid ${done ? C.accent : C.checkboxBorder}`,
 background: done ? C.accentDim : "transparent",
 display: "flex", alignItems: "center", justifyContent: "center",
@@ -1368,6 +1549,13 @@ const logicalToday=getLogicalDate(offset);
 
 const activeCount = habits.filter(h => h.is_active).length;
 const atMax = activeCount >= 5;
+// 作業中→一時停止→卒業済み。各グループでは登録順を保存する。
+const orderedHabits = habits.map((habit, index) => ({ habit, index }))
+  .sort((a, b) => {
+    const priority = h => h.graduated_at ? 2 : h.is_active ? 0 : 1;
+    return priority(a.habit) - priority(b.habit) || a.index - b.index;
+  }).map(item => item.habit);
+const firstGraduatedId = orderedHabits.find(h => !!h.graduated_at)?.id;
 
 const handleAdd = (data) => {
 onAdd(data);
@@ -1439,8 +1627,14 @@ transition: "all 0.2s",
     </div>
   )}
 
-  {habits.map(h => (
-    <div key={h.id} className="fade-up" style={{
+  {orderedHabits.map(h => (
+    <div key={h.id}>
+      {h.id === firstGraduatedId && (
+        <div style={{margin:"24px 20px 10px",paddingTop:12,borderTop:`1px solid ${C.border}`,fontSize:12,color:C.textMuted}}>
+          🏅 卒業した習慣
+        </div>
+      )}
+    <div className="fade-up" style={{
       margin: "10px 16px",
       background: C.card,
       borderRadius: 14,
@@ -1498,6 +1692,7 @@ transition: "all 0.2s",
           <button onClick={()=>setGraduateConfirm(h.id)} style={{padding:"10px 14px",borderRadius:10,color:C.accent,background:C.accentDim,border:`1px solid ${C.accent}44`}}>✦ この習慣を卒業する</button>
         </div>
       ) : null}
+    </div>
     </div>
   ))}
 
@@ -2165,6 +2360,28 @@ export default function App() {
   const [returningDays,setReturningDays]=useState(null);
   const [firstNotice,setFirstNotice]=useState(false);
   const [clockTick,setClockTick]=useState(0);
+  // The visual viewport may be narrower than the layout viewport after iOS page zoom.
+  const [screenViewport,setScreenViewport]=useState(getModalViewport);
+  useEffect(()=>{
+    const viewport=window.visualViewport;
+    const update=()=>{
+      const next=getModalViewport();
+      setScreenViewport(previous=>
+        previous.left===next.left && previous.top===next.top &&
+        previous.width===next.width && previous.height===next.height &&
+        previous.scale===next.scale ? previous : next
+      );
+    };
+    viewport?.addEventListener("resize",update);
+    viewport?.addEventListener("scroll",update);
+    window.addEventListener("resize",update);
+    update();
+    return ()=>{
+      viewport?.removeEventListener("resize",update);
+      viewport?.removeEventListener("scroll",update);
+      window.removeEventListener("resize",update);
+    };
+  },[]);
   useEffect(()=>{if(!firstNotice)return;const t=setTimeout(()=>setFirstNotice(false),2600);return()=>clearTimeout(t);},[firstNotice]);
   const offset=settings.day_start_hour??0;
   // 時間経過とともに論理日付を更新する（タブを開いたままでも朝のタスクが切り替わる）。
@@ -2336,12 +2553,26 @@ export default function App() {
       setTriggerLogs(prev=>prev.map(l=>l.id===existing.id?{...l,is_reverted:!l.is_reverted,completed_at:new Date().toISOString()}:l));
     }else setTriggerLogs(prev=>[...prev,{id:`trig-${Date.now()}`,executed_date:dateKey,completed_at:new Date().toISOString(),is_reverted:false}]);
   },[triggerLogs,dateKey]);
+  const isZoomed = screenViewport.scale > 1.01;
+  const zoomWidth = Math.min(screenViewport.width, 480);
+  const shellStyle = {
+    width: "100%", maxWidth: 480, margin:"0 auto",
+    height: "100dvh", minHeight:0, boxSizing:"border-box",
+    paddingTop:"env(safe-area-inset-top, 0px)", display:"flex",
+    flexDirection:"column",background:activeTheme.bg,overflow:"hidden",
+    overflowX:"clip",transition:"background .3s ease",
+    ...(isZoomed ? {
+      position:"fixed", top:screenViewport.top,
+      left:screenViewport.left+Math.max(0,(screenViewport.width-zoomWidth)/2),
+      width:zoomWidth, height:screenViewport.height, margin:0
+    } : {})
+  };
   const visibleHabits=habits.filter(h=>!h.deleted);
   const historyHabits=habits.filter(h=>!h.deleted||logs.some(l=>l.habit_id===h.id&&!l.is_bonus&&!l.is_reverted));
 
   return (<>
     <GlobalStyles theme={activeTheme}/>
-    <div style={{maxWidth:480,margin:"0 auto",height:"100dvh",minHeight:0,boxSizing:"border-box",paddingTop:"env(safe-area-inset-top, 0px)",display:"flex",flexDirection:"column",background:activeTheme.bg,overflow:"hidden",transition:"background .3s ease"}}>
+    <div className="pon-root" style={shellStyle}>
       <div style={{flex:1,minHeight:0,overflow:"hidden",position:"relative",width:"100%"}}>
         {tab==="home"&&<HomeScreen habits={visibleHabits} logs={logs} userStatus={userStatus} onToggle={handleToggle}
           prevXp={prevXp} onGoToHabits={()=>setTab("habits")} offset={offset} levelUpInfo={levelUpInfo}
